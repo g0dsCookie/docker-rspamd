@@ -67,6 +67,7 @@ RUN set -eu \
         -DENABLE_JEMALLOC=OFF \
         -DENABLE_TORCH=ON \
         -DENABLE_HYPERSCANN=OFF \
+        -DCMAKE_INSTALL_PREFIX="/usr" \
  && make ${MAKEOPTS} CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" \
  && make install \
  && cd \

@@ -60,7 +60,7 @@ Note that **/path/to/config** is a directory.
 
 ## Update instructions
 
-1. Add new dovecot version to `build.py`
+1. Add new rspamd version to `build.py`
 2. `make VERSION="<VERSION>"`
     1. Omit `VERSION=` or set `<VERSION>` to **latest** if you are building a latest version.
 3. `make push`

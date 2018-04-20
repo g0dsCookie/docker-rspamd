@@ -1,21 +1,8 @@
 FROM alpine:3.7
 
-##### VERSIONS #####
-ARG MAJOR
-ARG MINOR
-ARG PATCH
-##### VERSIONS #####
-
-##### BUILDOPTIONS #####
-ARG MAKEOPTS=-j1
-ARG CFLAGS=-O2
-ARG CPPFLAGS=-O2
-##### BUILDOPTIONS #####
-
 ADD docker-entrypoint.sh /docker-entrypoint.sh
 
-RUN set -eu \
- && apk add --no-cache --virtual .rspamd-deps \
+RUN apk add --no-cache --virtual .rspamd-deps \
         attr \
         pcre2 \
         libressl \
@@ -29,6 +16,26 @@ RUN set -eu \
         icu \
         file \
         libnsl \
+ && addgroup -S rspamd \
+ && adduser -h /data -H -s /sbin/nologin -S -g rspamd rspamd \
+ && ln -s /conf /etc/rspamd \
+ && ln -s /var/lib/rspamd /data \
+ && mkdir -p /conf/local.d /conf/override.d /logs \
+ && chown -h rspamd:rspamd /data
+
+##### VERSIONS #####
+ARG MAJOR
+ARG MINOR
+ARG PATCH
+##### VERSIONS #####
+
+##### BUILDOPTIONS #####
+ARG MAKEOPTS=-j1
+ARG CFLAGS=-O2
+ARG CPPFLAGS=-O2
+##### BUILDOPTIONS #####
+
+RUN set -eu \
  && apk add --no-cache --virtual .build-deps \
         gcc g++ cmake \
         libc-dev rpcgen \
@@ -45,14 +52,10 @@ RUN set -eu \
         icu-dev \
         file-dev \
         libnsl-dev \
- && addgroup -S rspamd \
- && adduser -h "/data" -H -s /sbin/nologin -S -g rspamd rspamd \
- && mkdir -p "/data" \
- && chown rspamd:rspamd "/data" \
  && BDIR="$(mktemp -d)" \
  && cd "${BDIR}" \
  && wget -qO - "https://github.com/vstakhov/rspamd/archive/${MAJOR}.${MINOR}.${PATCH}.tar.gz" |\
-    tar -xzf - \
+        tar -xzf - \
  && mkdir "rspamd.build" \
  && cd "rspamd.build" \
  && cmake "../rspamd-${MAJOR}.${MINOR}.${PATCH}" \
@@ -72,12 +75,9 @@ RUN set -eu \
  && make install \
  && cd \
  && rm -r "${BDIR}" \
- && apk del .build-deps \
- && ln -s /conf /etc/rspamd \
- && ln -s /var/lib/rspamd /data \
- && mkdir -p /conf/{local,override}.d
+ && apk del .build-deps
 
-VOLUME [ "/conf", "/data", "/log" ]
+VOLUME [ "/conf/local.d", "/conf/override.d", "/data", "/logs" ]
 
 EXPOSE 11332 11333 11334
 

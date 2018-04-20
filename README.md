@@ -1,4 +1,4 @@
-# dovecot image
+# rspamd image
 
 This image provides an *unofficial* dockerized rspamd image.
 

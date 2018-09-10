@@ -17,7 +17,8 @@ tag = "{}/{}".format(prefix, service)
 
 versions = {
     "1.6.6": { "latest": False },
-    "1.7.3": { "latest": True },
+    "1.7.3": { "latest": False },
+    "1.7.9": { "latest": True },
 }
 
 def check_version(version):

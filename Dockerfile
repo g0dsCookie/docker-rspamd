@@ -46,7 +46,7 @@ RUN set -eu \
         file-dev \
         libnsl-dev \
  && addgroup -S rspamd \
- && adduser -h "/data" -H -s /sbin/nologin -S -g rspamd rspamd \
+ && adduser -h "/data" -H -s /sbin/nologin -S -g "" -G rspamd rspamd \
  && mkdir -p "/data" \
  && chown rspamd:rspamd "/data" \
  && BDIR="$(mktemp -d)" \

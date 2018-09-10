@@ -5,6 +5,7 @@ import os.path
 import argparse
 from threading import Thread, Lock
 from sys import exit
+import sys
 
 DEBUG = False
 LOGDIR = "logs"
@@ -80,30 +81,47 @@ def docker_build(ver):
         print("")
     PRINT_LOCK.release()
 
-    stdout = open(os.path.join(LOGDIR, "{}-{}.log".format(service, ver)), mode="w")
-    stderr = open(os.path.join(LOGDIR, "{}-{}.err".format(service, ver)), mode="w")
-    subprocess.call(["docker", "build"] + tags + bargs + ["."], stdout=stdout, stderr=stderr)
-    stdout.close()
-    stderr.close()
+    if LOGDIR == "stdout":
+        stdout = sys.stdout
+        stderr = sys.stderr
+    else:
+        stdout = open(os.path.join(LOGDIR, "{}-{}.log".format(service, ver)), mode="w")
+        stderr = open(os.path.join(LOGDIR, "{}-{}.err".format(service, ver)), mode="w")
+    ret = subprocess.call(["docker", "build"] + tags + bargs + ["."], stdout=stdout, stderr=stderr)
+
+    if LOGDIR != "stdout":
+        stdout.close()
+        stderr.close()
+
+    if ret != 0:
+        print("{} returned non-zero exit code: {}".format(" ".join(["docker", "build"] + tags + bargs + ["."]), ret))
+        exit(ret)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="{} build script".format(tag))
     parser.add_argument("--version", default="all", type=str, help="Set the version to build (Defaults to %(default)s")
     parser.add_argument("-d", "--debug", action='store_true', help="Enable debug output.")
     parser.add_argument("-l", "--logdir", metavar="LOGDIR", default="logs", type=str, help="Set the log directory (Defaults to %(default)s")
+    parser.add_argument("--stdout", action='store_true', help="Output to stdout.")
 
     args = parser.parse_args()
     DEBUG = args.debug
     LOGDIR = args.logdir
+    if args.stdout:
+        LOGDIR = "stdout"
 
     if args.version == "all":
-        threads = []
-        for ver in versions:
-            t = Thread(target=docker_build, args=(ver,))
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
+        if args.stdout:
+            for ver in versions:
+                docker_build(ver)
+        else:
+            threads = []
+            for ver in versions:
+                t = Thread(target=docker_build, args=(ver,))
+                t.start()
+                threads.append(t)
+            for t in threads:
+                t.join()
     elif args.version == "latest":
         for ver in versions:
             if versions[ver]["latest"]:

@@ -1,5 +1,5 @@
 MAJOR	?= 2
-MINOR	?= 4
+MINOR	?= 5
 
 TAG		= g0dscookie/rspamd
 TAGLIST		= -t ${TAG}:${MAJOR} -t ${TAG}:${MAJOR}.${MINOR}

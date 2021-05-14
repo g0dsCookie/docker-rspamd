@@ -1,4 +1,4 @@
-FROM alpine:3.11
+FROM debian:10
 
 ARG MAJOR
 ARG MINOR
@@ -8,38 +8,55 @@ LABEL maintainer="g0dsCookie <g0dscookie@cookieprojects.de>" \
       description="Fast, free and open-source spam filtering system"
 
 RUN set -eu \
- && apk add --no-cache --virtual .rspamd-deps \
- 	attr pcre2 openssl sqlite-libs libevent glib \
-	ragel luajit fann gd icu file libnsl libsodium \
- && addgroup -S rspamd \
- && adduser -h /var/lib/rspamd -H -s /sbin/nologin -S -g rspamd rspamd
-
-RUN set -eu \
- && apk add --no-cache --virtual .rspamd-bdeps \
-       gcc g++ cmake libc-dev rpcgen make tar gzip curl \
-       linux-headers pcre2-dev openssl-dev sqlite-dev \
-       libevent-dev glib-dev luajit-dev fann-dev gd-dev \
-       icu-dev file-dev libnsl-dev libsodium-dev \
- && MAKEOPTS="-j$(nproc)" \
- && BDIR="$(mktemp -d)" && cd "${BDIR}" \
- && curl -sSL -o "rspamd-${MAJOR}.${MINOR}.tar.gz" "https://github.com/vstakhov/rspamd/archive/${MAJOR}.${MINOR}.tar.gz" \
- && tar -xzf "rspamd-${MAJOR}.${MINOR}.tar.gz" \
+ && cecho() { echo "\033[1;32m$1\033[0m"; } \
+ && cecho "### PREPARE ENVIRONMENT ###" \
+ && TMP="$(mktemp -d)" && PV="${MAJOR}.${MINOR}" && S="${TMP}/rspamd-${PV}" \
+ && useradd -d /var/lib/rspamd -M -r rspamd \
+ && mkdir /var/lib/rspamd /run/rspamd \
+ && chown rspamd:rspamd /var/lib/rspamd /run/rspamd \
+ && chmod 0700 /var/lib/rspamd /run/rspamd \
+ && cecho "### INSTALLING DEPENDENCIES ###" \
+ && apt-get update -qqy \
+ && apt-get install -qqy \
+      build-essential cmake ragel curl gnupg \
+      libssl-dev libpcre2-dev libsqlite3-dev libevent-dev \
+      libc-dev libluajit-5.1-dev libfann-dev libgd-dev \
+      libicu-dev libmagic-dev libsodium-dev libjemalloc-dev \
+      libhyperscan-dev libglib2.0-dev \
+ && apt-get install -qqy \
+      openssl libfann2 libluajit-5.1 libpcre2-8-0 libsqlite3-0 \
+      libicu63 libsodium23 libhyperscan5 libglib2.0-0 libjemalloc2 \
+      libevent-2.1-6 libmagic1 \
+ && cecho "### DOWNLOADING RSPAMD ###" \
+ && cd "${TMP}" \
+ && curl -sSL --output "rspamd-${PV}.tar.gz" "https://github.com/rspamd/rspamd/archive/refs/tags/${PV}.tar.gz" \
+ && tar -xf "rspamd-${PV}.tar.gz" \
  && mkdir build && cd build \
- && cmake "../rspamd-${MAJOR}.${MINOR}" \
-       -DCONFDIR=/etc/rspamd -DRUNDIR=/var/run/rspamd \
-       -DDBDIR=/var/lib/rspamd -DLOGDIR=/var/logs/rspamd \
-       -DENABLE_LUAJIT=ON -DENABLE_FANN=ON \
-       -DENABLE_GD=ON -DENABLE_PCRE2=ON \
-       -DENABLE_JEMALLOC=OFF -DENABLE_TORCH=ON \
-       -DENABLE_HYPERSCANN=OFF -DCMAKE_INSTALL_PREFIX="/usr" \
- && make -j$(nproc) ${MAKEOPTS} && make install && cd \
- && rm -r "${BDIR}" \
- && apk del .rspamd-bdeps \
- && mkdir -p /etc/rspamd/local.d /etc/rspamd/override.d /var/lib/rspamd /var/logs/rspamd \
- && chown -h rspamd:rspamd /var/lib/rspamd /var/logs/rspamd
+ && cmake "../rspamd-${PV}" \
+      -DCONFDIR=/etc/rspamd -DRUNDIR=/run/rspamd \
+      -DDBDIR=/var/lib/rspamd -DLOGDIR=/var/log/rspamd \
+      -DENABLE_LUAJIT=ON -DENABLE_FANN=ON \
+      -DENABLE_GD=ON -DENABLE_PCRE2=ON \
+      -DENABLE_JEMALLOC=ON -DENABLE_TORCH=ON \
+      -DENABLE_HYPERSCAN=ON -DCMAKE_INSTALL_PREFIX="/usr" \
+ && make -j$(nproc) \
+ && make install \
+ && mkdir /etc/rspamd/local.d /etc/rspamd/override.d \
+ && cecho "### CLEANUP ###" \
+ && cd && rm -rf "${TMP}" \
+ && apt-get remove -qqy \
+      build-essential cmake ragel curl gnupg \
+      libssl-dev libpcre2-dev libsqlite3-dev libevent-dev \
+      libc-dev libluajit-5.1-dev libfann-dev libgd-dev \
+      libicu-dev libmagic-dev libsodium-dev libjemalloc-dev \
+      libhyperscan-dev libglib2.0-dev \
+ && apt-get autoremove -qqy \
+ && apt-get clean -qqy
+
+COPY --chown=root:root defaults/ /etc/rspamd/local.d
 
 VOLUME [ "/etc/rspamd/local.d", "/etc/rspamd/override.d", "/var/lib/rspamd", "/var/logs/rspamd" ]
-
 EXPOSE 11332 11333 11334
-
-ENTRYPOINT [ "rspamd", "-f", "-u", "rspamd", "-g", "rspamd" ]
+USER rspamd
+WORKDIR /var/lib/rspamd
+ENTRYPOINT [ "rspamd", "-f" ]

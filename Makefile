@@ -1,11 +1,11 @@
-MAJOR	?= 2
-MINOR	?= 7
+MAJOR	?= 3
+MINOR	?= 0
 
 TAG		= g0dscookie/rspamd
 TAGLIST		= -t ${TAG}:${MAJOR} -t ${TAG}:${MAJOR}.${MINOR}
 BUILDARGS	= --build-arg MAJOR=${MAJOR} --build-arg MINOR=${MINOR}
 
-PLATFORM_FLAGS  = --platform linux/amd64 --platform linux/arm64
+PLATFORM_FLAGS  = --platform linux/amd64
 PUSH            ?= --push
 
 build:
@@ -20,9 +20,3 @@ amd64: build
 amd64-latest: TAGLIST := -t ${TAG}:latest ${TAGLIST}
 amd64-latest: amd64
 .PHONY: amd64 amd64-latest
-
-arm64: PLATFORM_FLAGS := --platform linux/arm64
-arm64: build
-arm64-latest: TAGLIST := -t ${TAG}:latest ${TAGLIST}
-arm64-latest: arm64
-.PHONY: arm64 arm64-latest

@@ -1,4 +1,4 @@
-FROM debian:10
+FROM debian:11
 
 ARG MAJOR
 ARG MINOR
@@ -25,8 +25,8 @@ RUN set -eu \
       libhyperscan-dev libglib2.0-dev \
  && apt-get install -qqy \
       openssl libfann2 libluajit-5.1 libpcre2-8-0 libsqlite3-0 \
-      libicu63 libsodium23 libhyperscan5 libglib2.0-0 libjemalloc2 \
-      libevent-2.1-6 libmagic1 \
+      libicu67 libsodium23 libhyperscan5 libglib2.0-0 libjemalloc2 \
+      libevent-2.1-7 libmagic1 \
  && cecho "### DOWNLOADING RSPAMD ###" \
  && cd "${TMP}" \
  && curl -sSL --output "rspamd-${PV}.tar.gz" "https://github.com/rspamd/rspamd/archive/refs/tags/${PV}.tar.gz" \

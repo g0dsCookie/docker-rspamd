@@ -1,16 +1,19 @@
-FROM debian:11
+ARG DEBIAN_VERSION=11
+FROM debian:${DEBIAN_VERSION}
 
-ARG MAJOR
-ARG MINOR
+ARG RSPAMD_VERSION
 
 LABEL maintainer="g0dsCookie <g0dscookie@cookieprojects.de>" \
-      version="${MAJOR}.${MINOR}" \
-      description="Fast, free and open-source spam filtering system"
+      description="Fast, free and open-source spam filtering system" \
+      version="${RSPAMD_VERSION}"
 
 RUN set -eu \
+ && RSPAMD_VERSION="$(echo ${RSPAMD_VERSION} | sed 's/^v//')" \
+ && echo "${RSPAMD_VERSION}" >ver \
+ && IFS='.' read MAJOR MINOR PATCH <ver && rm -f ver \
  && cecho() { echo "\033[1;32m$1\033[0m"; } \
  && cecho "### PREPARE ENVIRONMENT ###" \
- && TMP="$(mktemp -d)" && PV="${MAJOR}.${MINOR}" && S="${TMP}/rspamd-${PV}" \
+ && TMP="$(mktemp -d)" && PV="${RSPAMD_VERSION}" && S="${TMP}/rspamd-${PV}" \
  && useradd -d /var/lib/rspamd -M -r rspamd \
  && mkdir /var/lib/rspamd /run/rspamd \
  && chown rspamd:rspamd /var/lib/rspamd /run/rspamd \
@@ -39,8 +42,8 @@ RUN set -eu \
       -DENABLE_GD=ON -DENABLE_PCRE2=ON \
       -DENABLE_JEMALLOC=ON -DENABLE_TORCH=ON \
       -DENABLE_HYPERSCAN=ON -DCMAKE_INSTALL_PREFIX="/usr" \
- && make -j$(nproc) \
- && make install \
+ && cmake --build . \
+ && cmake --build . --target install \
  && mkdir /etc/rspamd/local.d /etc/rspamd/override.d \
  && cecho "### CLEANUP ###" \
  && cd && rm -rf "${TMP}" \

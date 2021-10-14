@@ -13,7 +13,7 @@ RUN set -eu \
  && IFS='.' read MAJOR MINOR PATCH <ver && rm -f ver \
  && cecho() { echo "\033[1;32m$1\033[0m"; } \
  && cecho "### PREPARE ENVIRONMENT ###" \
- && TMP="$(mktemp -d)" && PV="${RSPAMD_VERSION}" && S="${TMP}/rspamd-${PV}" \
+ && TMP="$(mktemp -d)" && PV="${MAJOR}.${MINOR}" && S="${TMP}/rspamd-${PV}" \
  && useradd -d /var/lib/rspamd -M -r rspamd \
  && mkdir /var/lib/rspamd /run/rspamd \
  && chown rspamd:rspamd /var/lib/rspamd /run/rspamd \
